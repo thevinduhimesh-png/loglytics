@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>NTG · Upload Console</title>
+  <link rel="stylesheet" href="/css/shared.css"/>
+  <style>
+    .upload-hero {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: calc(100vh - 64px);
+      padding: 48px 24px;
+    }
+
+    .hero-label {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 16px;
+    }
+
+    .hero-title {
+      font-family: 'Instrument Serif', serif;
+      font-size: clamp(36px, 5vw, 56px);
+      color: var(--white);
+      text-align: center;
+      line-height: 1.15;
+      margin-bottom: 12px;
+      max-width: 640px;
+    }
+
+    .hero-title em { font-style: italic; color: var(--gold); }
+
+    .hero-sub {
+      font-size: 15px;
+      color: var(--text-muted);
+      text-align: center;
+      margin-bottom: 48px;
+      max-width: 480px;
+      line-height: 1.6;
+    }
+
+    .drop-card {
+      width: 100%;
+      max-width: 560px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: var(--shadow-lg);
+    }
+
+    .drop-zone {
+      position: relative;
+      padding: 56px 32px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .drop-zone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+
+    .drop-zone:hover, .drop-zone.over { background: rgba(196,160,80,0.05); }
+    .drop-zone.over { border-color: rgba(196,160,80,0.4); }
+
+    .drop-ring {
+      width: 72px; height: 72px;
+      border-radius: 50%;
+      border: 1.5px solid var(--border-bright);
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 20px;
+      font-size: 28px;
+      transition: all 0.25s ease;
+      background: rgba(255,255,255,0.03);
+    }
+
+    .drop-zone:hover .drop-ring, .drop-zone.over .drop-ring {
+      border-color: var(--gold);
+      background: rgba(196,160,80,0.08);
+    }
+
+    .drop-title { font-size: 16px; font-weight: 500; color: var(--white); margin-bottom: 6px; }
+    .drop-hint  { font-size: 12.5px; color: var(--text-muted); font-family: 'DM Mono', monospace; }
+
+    .file-list { max-height: 240px; overflow-y: auto; }
+
+    .file-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+      animation: rowIn 0.2s ease;
+    }
+
+    .file-row:last-child { border-bottom: none; }
+
+    @keyframes rowIn {
+      from { opacity: 0; transform: translateX(-8px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+
+    .file-icon {
+      width: 36px; height: 36px;
+      background: rgba(196,160,80,0.1);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; flex-shrink: 0;
+    }
+
+    .file-info { flex: 1; min-width: 0; }
+
+    .file-name {
+      font-size: 13px; font-weight: 500; color: var(--white);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    .file-meta {
+      font-size: 11px; font-family: 'DM Mono', monospace;
+      color: var(--text-muted); margin-top: 2px;
+    }
+
+    .file-status {
+      font-size: 11px; font-weight: 500;
+      padding: 3px 10px; border-radius: 20px; flex-shrink: 0;
+    }
+
+    .s-pending { background: rgba(255,255,255,0.06); color: var(--text-muted); }
+    .s-sending { background: rgba(196,160,80,0.15);  color: var(--gold); }
+    .s-done    { background: rgba(74,222,128,0.12);  color: var(--green); }
+    .s-error   { background: rgba(239,68,68,0.12);   color: var(--red); }
+
+    .action-bar {
+      padding: 18px 20px;
+      display: flex; align-items: center; gap: 12px;
+    }
+
+    .btn-generate {
+      flex: 1; padding: 12px;
+      background: var(--gold); color: #0a0a0f;
+      border: none; border-radius: 10px;
+      font-size: 14px; font-weight: 600;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer; transition: all 0.2s;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+
+    .btn-generate:hover    { background: var(--gold-light); transform: translateY(-1px); }
+    .btn-generate:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+    .btn-clear {
+      padding: 12px 16px;
+      background: transparent; color: var(--text-muted);
+      border: 1px solid var(--border); border-radius: 10px;
+      font-size: 13px; font-family: 'DM Sans', sans-serif;
+      cursor: pointer; transition: all 0.15s;
+    }
+
+    .btn-clear:hover { color: var(--white); border-color: var(--border-bright); }
+
+    .progress-wrap { padding: 0 20px 16px; display: none; }
+    .progress-wrap.show { display: block; }
+
+    .progress-label {
+      font-size: 11px; font-family: 'DM Mono', monospace;
+      color: var(--text-muted); margin-bottom: 6px;
+      display: flex; justify-content: space-between;
+    }
+
+    .progress-track { height: 3px; background: var(--border); border-radius: 3px; overflow: hidden; }
+
+    .progress-fill {
+      height: 100%; background: var(--gold);
+      width: 0%; transition: width 0.5s ease; border-radius: 3px;
+    }
+
+    .alert {
+      margin: 0 20px 16px; padding: 10px 14px;
+      border-radius: 8px; font-size: 13px;
+      display: none; align-items: center; gap: 8px;
+      line-height: 1.4;
+    }
+
+    .alert.show { display: flex; }
+    .alert.success { background: rgba(74,222,128,0.1);  color: var(--green); border: 1px solid rgba(74,222,128,0.2); }
+    .alert.error   { background: rgba(239,68,68,0.1);   color: var(--red);   border: 1px solid rgba(239,68,68,0.2); }
+
+    .quick-stats { display: flex; gap: 24px; margin-top: 32px; justify-content: center; }
+    .qs-item { text-align: center; }
+    .qs-val  { font-family: 'Instrument Serif', serif; font-size: 28px; color: var(--white); }
+    .qs-label {
+      font-size: 11px; font-family: 'DM Mono', monospace;
+      color: var(--text-muted); letter-spacing: 1px;
+      text-transform: uppercase; margin-top: 2px;
+    }
+    .qs-div { width: 1px; background: var(--border); align-self: stretch; margin: 4px 0; }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <a href="/index.html" class="nav-logo">
+    <span class="nav-logo-mark">NTG</span>
+    <span class="nav-logo-text">Reporting</span>
+  </a>
+  <div class="nav-links">
+    <a href="/index.html"     class="nav-link active">Upload</a>
+    <a href="/status.html"    class="nav-link">Status</a>
+    <a href="/dashboard.html" class="nav-link">Dashboard</a>
+  </div>
+  <div class="nav-right">
+    <div class="status-pill">
+      <span class="status-dot" id="statusDot"></span>
+      <span id="statusText">Connecting…</span>
+    </div>
+  </div>
+</nav>
+
+<main class="upload-hero">
+  <div class="hero-label">NTG Reporting System · 2025</div>
+  <h1 class="hero-title">Drop your console file.<br/><em>Dashboard builds itself.</em></h1>
+  <p class="hero-sub">Upload any monthly BR console file and the system automatically maps 23,600+ cells across 9 entities into your master dashboard.</p>
+
+  <div class="drop-card">
+    <div class="drop-zone" id="dropZone">
+      <!-- accepts any file so user can drop — we validate below -->
+      <input type="file" id="fileInput" accept=".xlsx,.xlsm" multiple/>
+      <div class="drop-ring">📄</div>
+      <div class="drop-title">Drop console file here</div>
+      <div class="drop-hint">or click to browse · .xlsx only</div>
+    </div>
+
+    <div class="file-list" id="fileList"></div>
+
+    <div class="progress-wrap" id="progressWrap">
+      <div class="progress-label">
+        <span id="progressLabel">Processing…</span>
+        <span id="progressPct">0%</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+    </div>
+
+    <div class="alert" id="alertBox"></div>
+
+    <div class="action-bar">
+      <button class="btn-generate" id="generateBtn" disabled onclick="startGeneration()">
+        ⚡ Generate Dashboard
+      </button>
+      <button class="btn-clear" onclick="clearAll()">✕</button>
+    </div>
+  </div>
+
+  <div class="quick-stats">
+    <div class="qs-item">
+      <div class="qs-val" id="qsMappings">—</div>
+      <div class="qs-label">Mappings Loaded</div>
+    </div>
+    <div class="qs-div"></div>
+    <div class="qs-item">
+      <div class="qs-val" id="qsMonths">—</div>
+      <div class="qs-label">Months Processed</div>
+    </div>
+    <div class="qs-div"></div>
+    <div class="qs-item">
+      <div class="qs-val">9</div>
+      <div class="qs-label">Entities</div>
+    </div>
+  </div>
+</main>
+
+<script>
+  const API = 'http://localhost:8080/api/dashboard';
+  let pending = [];
+
+  // ── Health check ──────────────────────────────────────────
+  async function checkHealth() {
+    const dot  = document.getElementById('statusDot');
+    const text = document.getElementById('statusText');
+    try {
+      const res = await fetch(API + '/health', { method: 'GET' });
+      if (res.ok) {
+        const d = await res.json();
+        dot.className    = 'status-dot online';
+        text.textContent = 'Backend · ' + parseInt(d.mappingsLoaded || 0).toLocaleString() + ' mappings';
+        document.getElementById('qsMappings').textContent = parseInt(d.mappingsLoaded || 0).toLocaleString();
+      } else {
+        throw new Error('HTTP ' + res.status);
+      }
+    } catch (e) {
+      dot.className    = 'status-dot offline';
+      text.textContent = 'Backend offline';
+      console.warn('Health check failed:', e.message);
+    }
+  }
+
+  async function loadStats() {
+    try {
+      const res = await fetch(API + '/status');
+      if (!res.ok) return;
+      const d = await res.json();
+      const months = ((d.watcherStatus && d.watcherStatus.processedMonths) || '')
+                      .split(' ').filter(Boolean).length;
+      document.getElementById('qsMonths').textContent = months || '0';
+    } catch {}
+  }
+
+  checkHealth();
+  loadStats();
+  setInterval(checkHealth, 8000);
+
+  // ── Month detection — matches any month name anywhere in filename ──
+  function detectMonth(name) {
+    const months = ['January','February','March','April','May','June',
+                    'July','August','September','October','November','December'];
+    for (const m of months) {
+      if (name.toLowerCase().includes(m.toLowerCase())) {
+        return m.substring(0, 3);
+      }
+    }
+    return null;
+  }
+
+  function safe(n) { return n.replace(/[^a-zA-Z0-9]/g, '_'); }
+
+  // ── Drop zone ─────────────────────────────────────────────
+  const dz = document.getElementById('dropZone');
+  const fi = document.getElementById('fileInput');
+
+  dz.addEventListener('dragover',  e => { e.preventDefault(); dz.classList.add('over'); });
+  dz.addEventListener('dragleave', ()  => dz.classList.remove('over'));
+  dz.addEventListener('drop', e => {
+    e.preventDefault();
+    dz.classList.remove('over');
+    addFiles([...e.dataTransfer.files]);
+  });
+  fi.addEventListener('change', () => addFiles([...fi.files]));
+
+  function addFiles(files) {
+    // Accept .xlsx files — check by extension since MIME type can vary
+    const valid = files.filter(f => f.name.toLowerCase().endsWith('.xlsx'));
+    const invalid = files.filter(f => !f.name.toLowerCase().endsWith('.xlsx'));
+
+    if (invalid.length > 0) {
+      showAlert('error', '✗ Only .xlsx files are supported. Rejected: ' + invalid.map(f => f.name).join(', '));
+    }
+
+    valid.forEach(f => {
+      if (!pending.find(p => p.name === f.name)) {
+        pending.push(f);
+        renderRow(f);
+      }
+    });
+
+    document.getElementById('generateBtn').disabled = pending.length === 0;
+  }
+
+  function renderRow(file) {
+    const month = detectMonth(file.name);
+    const row   = document.createElement('div');
+    row.className = 'file-row';
+    row.id = 'row-' + safe(file.name);
+    row.innerHTML = `
+      <div class="file-icon">📄</div>
+      <div class="file-info">
+        <div class="file-name">${file.name}</div>
+        <div class="file-meta">
+          ${(file.size / 1024).toFixed(1)} KB ·
+          ${month ? '<span style="color:var(--green)">' + month + ' detected</span>' : '<span style="color:var(--red)">Month not detected</span>'}
+        </div>
+      </div>
+      <span class="file-status s-pending" id="st-${safe(file.name)}">Pending</span>`;
+    document.getElementById('fileList').appendChild(row);
+  }
+
+  function setStatus(name, cls, label) {
+    const el = document.getElementById('st-' + safe(name));
+    if (el) { el.className = 'file-status ' + cls; el.textContent = label; }
+  }
+
+  // ── Upload ────────────────────────────────────────────────
+  async function startGeneration() {
+    if (!pending.length) return;
+
+    const btn = document.getElementById('generateBtn');
+    btn.disabled = true;
+    btn.textContent = '⏳ Processing…';
+    showProgress(true);
+    hideAlert();
+
+    let ok = 0;
+    let lastError = '';
+
+    for (let i = 0; i < pending.length; i++) {
+      const f = pending[i];
+      setStatus(f.name, 's-sending', 'Sending…');
+      setProgress(Math.round((i / pending.length) * 85), 'Uploading ' + f.name + '…');
+
+      try {
+        const fd = new FormData();
+        fd.append('file', f);
+
+        const res = await fetch(API + '/upload', {
+          method: 'POST',
+          body: fd
+          // Do NOT set Content-Type header — browser sets it with boundary automatically
+        });
+
+        if (res.ok) {
+          const data = await res.json().catch(() => ({}));
+          setStatus(f.name, 's-done', '✓ Done');
+          ok++;
+          console.log('Upload success:', data);
+        } else {
+          const err = await res.json().catch(() => ({ message: 'HTTP ' + res.status }));
+          lastError = err.message || ('HTTP ' + res.status);
+          setStatus(f.name, 's-error', '✗ Failed');
+          console.error('Upload failed:', err);
+        }
+      } catch (e) {
+        lastError = e.message;
+        setStatus(f.name, 's-error', '✗ Network error');
+        console.error('Upload network error:', e);
+      }
+    }
+
+    setProgress(100, 'Complete');
+
+    if (ok > 0) {
+      showAlert('success', '✓ ' + ok + ' file(s) processed successfully. Redirecting to status…');
+      setTimeout(() => window.location.href = '/status.html', 1800);
+    } else {
+      showAlert('error', '✗ Upload failed: ' + (lastError || 'Unknown error. Check Spring Boot console for details.'));
+    }
+
+    pending = [];
+    btn.disabled = false;
+    btn.textContent = '⚡ Generate Dashboard';
+    setTimeout(() => showProgress(false), 3000);
+    loadStats();
+  }
+
+  function clearAll() {
+    pending = [];
+    document.getElementById('fileList').innerHTML = '';
+    document.getElementById('generateBtn').disabled = true;
+    hideAlert();
+  }
+
+  function showProgress(v) {
+    document.getElementById('progressWrap').classList.toggle('show', v);
+  }
+
+  function setProgress(pct, label) {
+    document.getElementById('progressFill').style.width = pct + '%';
+    document.getElementById('progressLabel').textContent = label;
+    document.getElementById('progressPct').textContent   = pct + '%';
+  }
+
+  function showAlert(type, msg) {
+    const el = document.getElementById('alertBox');
+    el.className   = 'alert show ' + type;
+    el.textContent = msg;
+  }
+
+  function hideAlert() {
+    document.getElementById('alertBox').className = 'alert';
+  }
+</script>
+</body>
+</html>

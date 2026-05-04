@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>NTG · Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/css/shared.css"/>
+  <style>
+    .main { padding: 0 40px 48px; }
+
+    /* ── Header Grid ────────────────────────────────── */
+    .header-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px 20px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: var(--gold);
+      opacity: 0.5;
+    }
+
+    .stat-label {
+      font-size: 10px;
+      font-family: 'DM Mono', monospace;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .stat-value {
+      font-family: 'Instrument Serif', serif;
+      font-size: 32px;
+      color: var(--white);
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+
+    .stat-value.accent { color: var(--gold); }
+    .stat-value.success { color: var(--green); }
+
+    .stat-desc {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    /* ── Top Grid ────────────────────────────────── */
+    .top-grid {
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    @media (max-width: 1200px) {
+      .top-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* ── Power BI Card ────────────────────────────── */
+    .pbi-card {
+      background: linear-gradient(135deg, rgba(196,160,80,0.12) 0%, rgba(196,160,80,0.04) 100%);
+      border: 1px solid rgba(196,160,80,0.25);
+      border-radius: 14px;
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .pbi-card::before {
+      content: '';
+      position: absolute;
+      top: -50%; right: -50%;
+      width: 300px; height: 300px;
+      background: radial-gradient(circle, rgba(196,160,80,0.1) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .pbi-icon {
+      width: 64px; height: 64px;
+      background: rgba(196,160,80,0.15);
+      border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px;
+      border: 1px solid rgba(196,160,80,0.2);
+      position: relative;
+      z-index: 1;
+    }
+
+    .pbi-title {
+      font-family: 'Instrument Serif', serif;
+      font-size: 22px;
+      color: var(--white);
+      position: relative;
+      z-index: 1;
+    }
+
+    .pbi-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.6;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ── Buttons ────────────────────────────────── */
+    .btn-pbi {
+      width: 100%;
+      padding: 13px;
+      background: var(--gold);
+      color: #0a0a0f;
+      border: none;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .btn-pbi:hover {
+      background: var(--gold-light);
+      transform: translateY(-1px);
+      box-shadow: 0 8px 16px rgba(196,160,80,0.2);
+    }
+
+    .btn-pbi:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-secondary-sm {
+      width: 100%;
+      padding: 10px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text-muted);
+      font-size: 13px;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+      transition: all 0.15s;
+      position: relative;
+      z-index: 1;
+    }
+
+    .btn-secondary-sm:hover {
+      border-color: var(--border-bright);
+      color: var(--white);
+    }
+
+    /* ── Table ────────────────────────────────── */
+    .table-wrap { 
+      overflow-x: auto;
+      max-height: 600px;
+      overflow-y: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead th {
+      padding: 11px 16px;
+      text-align: left;
+      font-size: 11px;
+      font-family: 'DM Mono', monospace;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      background: rgba(255,255,255,0.02);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background 0.1s;
+      animation: rowFadeIn 0.3s ease;
+    }
+
+    @keyframes rowFadeIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: rgba(255,255,255,0.02); }
+
+    tbody td {
+      padding: 13px 16px;
+      font-size: 13px;
+      color: var(--text-mid);
+    }
+
+    tbody td:first-child {
+      color: var(--white);
+      font-weight: 500;
+      font-family: 'DM Mono', monospace;
+    }
+
+    /* ── Badges ────────────────────────────────── */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11.5px;
+      font-weight: 500;
+      padding: 4px 10px;
+      border-radius: 20px;
+      white-space: nowrap;
+    }
+
+    .badge.done {
+      background: rgba(74,222,128,0.15);
+      color: var(--green);
+    }
+
+    .badge.pending {
+      background: rgba(255,255,255,0.05);
+      color: var(--text-muted);
+    }
+
+    .badge.processing {
+      background: rgba(196,160,80,0.15);
+      color: var(--gold);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+
+    /* ── Entity Grid ────────────────────────────────── */
+    .entity-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      padding: 20px;
+    }
+
+    @media (max-width: 768px) {
+      .entity-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    .entity-pill {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 14px;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 12.5px;
+      color: var(--text-mid);
+      transition: all 0.15s;
+    }
+
+    .entity-pill:hover {
+      border-color: var(--border-bright);
+      color: var(--white);
+      background: rgba(255,255,255,0.04);
+    }
+
+    .entity-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* ── Output Info ────────────────────────────────── */
+    .output-info {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 16px 20px;
+      background: rgba(74,222,128,0.05);
+      border-bottom: 1px solid rgba(74,222,128,0.1);
+    }
+
+    .output-icon { font-size: 22px; }
+
+    .output-path {
+      font-family: 'DM Mono', monospace;
+      font-size: 12px;
+      color: var(--green);
+      word-break: break-all;
+    }
+
+    .output-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 2px;
+    }
+
+    /* ── Empty State ────────────────────────────────── */
+    .empty-row td {
+      text-align: center;
+      padding: 48px;
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+
+    /* ── Right Sidebar ────────────────────────────────── */
+    .right-sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* ── Sync Status ────────────────────────────────── */
+    .sync-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      font-family: 'DM Mono', monospace;
+      color: var(--text-muted);
+      padding: 12px;
+      background: rgba(255,255,255,0.02);
+      border-radius: 8px;
+      margin-top: 8px;
+    }
+
+    .sync-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--gold);
+      animation: blink 2s infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    /* ── Processing Info ────────────────────────────────── */
+    .processing-info {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px 20px;
+    }
+
+    .processing-label {
+      font-size: 10px;
+      font-family: 'DM Mono', monospace;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+
+    .progress-track {
+      height: 4px;
+      background: var(--border);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--gold);
+      transition: width 0.4s ease;
+      border-radius: 3px;
+    }
+
+    .progress-text {
+      font-size: 11px;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    /* ── Data Summary ────────────────────────────────── */
+    .data-summary {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+    }
+
+    .summary-row:last-child {
+      border-bottom: none;
+    }
+
+    .summary-label {
+      color: var(--text-muted);
+    }
+
+    .summary-value {
+      color: var(--white);
+      font-family: 'DM Mono', monospace;
+      font-weight: 500;
+    }
+
+    .summary-value.accent {
+      color: var(--gold);
+    }
+
+    .summary-value.success {
+      color: var(--green);
+    }
+
+    /* ── Action Bar ────────────────────────────────── */
+    .action-bar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn-action {
+      flex: 1;
+      min-width: 120px;
+      padding: 10px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-muted);
+      font-size: 12px;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-action:hover {
+      border-color: var(--border-bright);
+      color: var(--white);
+      background: rgba(255,255,255,0.02);
+    }
+
+    .btn-action.accent {
+      background: rgba(196,160,80,0.1);
+      border-color: rgba(196,160,80,0.3);
+      color: var(--gold);
+    }
+
+    .btn-action.accent:hover {
+      background: rgba(196,160,80,0.15);
+      border-color: var(--gold);
+    }
+
+    /* ── Finance Metrics ────────────────────────────────── */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .metric-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      text-align: center;
+    }
+
+    .metric-icon {
+      font-size: 20px;
+      margin-bottom: 6px;
+    }
+
+    .metric-value {
+      font-family: 'Instrument Serif', serif;
+      font-size: 24px;
+      color: var(--white);
+      margin-bottom: 2px;
+    }
+
+    .metric-label {
+      font-size: 10px;
+      font-family: 'DM Mono', monospace;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <a href="/" class="nav-logo">
+    <span class="nav-logo-mark">NTG</span>
+    <span class="nav-logo-text">Reporting</span>
+  </a>
+  <div class="nav-links">
+    <a href="/" class="nav-link">Upload</a>
+    <a href="/status" class="nav-link">Status</a>
+    <a href="/dashboard" class="nav-link active">Dashboard</a>
+  </div>
+  <div class="nav-right">
+    <div class="status-pill" id="statusPill">
+      <span class="status-dot" id="statusDot"></span>
+      <span id="statusText">Connecting…</span>
+    </div>
+  </div>
+</nav>
+
+<div class="main">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div class="page-tag">Consolidated Dashboard</div>
+    <h1 class="page-title">NTG 2025 <em>Dashboard</em></h1>
+    <p class="page-sub">All processed months consolidated into a single Excel file, ready for Power BI and finance analysis.</p>
+  </div>
+
+  <!-- Header Stats -->
+  <div class="header-stats" id="headerStats">
+    <div class="stat-card">
+      <div class="stat-label">Months Processed</div>
+      <div class="stat-value success" id="statMonthsProcessed">0</div>
+      <div class="stat-desc">of 12 months</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Total Mappings</div>
+      <div class="stat-value accent" id="statTotalMappings">—</div>
+      <div class="stat-desc">cells mapped</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Completion</div>
+      <div class="stat-value" id="statCompletion">0%</div>
+      <div class="stat-desc">FY2025 coverage</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Last Updated</div>
+      <div class="stat-desc" id="statLastUpdate">—</div>
+      <div style="margin-top: 4px;">
+        <span class="sync-indicator">
+          <div class="sync-dot"></div>
+          <span id="syncStatus">Auto-syncing</span>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Finance Metrics -->
+  <div class="metrics-grid" id="metricsGrid">
+    <div class="metric-box">
+      <div class="metric-icon">📊</div>
+      <div class="metric-value" id="metricEntities">9</div>
+      <div class="metric-label">Entities</div>
+    </div>
+    <div class="metric-box">
+      <div class="metric-icon">📁</div>
+      <div class="metric-value" id="metricFiles">0</div>
+      <div class="metric-label">Files</div>
+    </div>
+    <div class="metric-box">
+      <div class="metric-icon">✓</div>
+      <div class="metric-value" id="metricStatus">Idle</div>
+      <div class="metric-label">Status</div>
+    </div>
+    <div class="metric-box">
+      <div class="metric-icon">⏱</div>
+      <div class="metric-value" id="metricChecks">—</div>
+      <div class="metric-label">Checks</div>
+    </div>
+  </div>
+
+  <!-- Top Grid: Table + Power BI Card -->
+  <div class="top-grid">
+    <!-- Months Table -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon gold">📊</div>
+        <div>
+          <div class="card-title">FY2025 Processed Months</div>
+          <div class="card-sub">All months written to NTG_2025_Dashboard.xlsx</div>
+        </div>
+      </div>
+
+      <!-- Output File Banner -->
+      <div class="output-info">
+        <div class="output-icon">📁</div>
+        <div>
+          <div class="output-label">Output File</div>
+          <div class="output-path" id="outputPath">NTG_2025_Dashboard.xlsx</div>
+        </div>
+      </div>
+
+      <!-- Months Table -->
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Month</th>
+              <th>Status</th>
+              <th>Entities</th>
+              <th>Processed At</th>
+            </tr>
+          </thead>
+          <tbody id="monthsTable">
+            <tr class="empty-row">
+              <td colspan="4">No months processed yet — upload a console file to begin</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Action Bar -->
+      <div style="padding: 16px 20px; border-top: 1px solid var(--border); display: flex; gap: 10px;">
+        <button class="btn-action accent" onclick="refreshDashboard()">🔄 Refresh Data</button>
+        <button class="btn-action" onclick="exportData()">⬇ Export</button>
+      </div>
+    </div>
+
+    <!-- Right Sidebar -->
+    <div class="right-sidebar">
+      <!-- Power BI Card -->
+      <div class="pbi-card">
+        <div class="pbi-icon">📊</div>
+        <div class="pbi-title">Open in Power BI</div>
+        <div class="pbi-desc">Launch your Power BI template. It reads directly from the generated dashboard Excel file.</div>
+        <button class="btn-pbi" id="pbiBtn" onclick="openPowerBI()">
+          ▶ Open Power BI Template
+        </button>
+        <button class="btn-secondary-sm" onclick="openOutputFolder()">
+          📂 Open Output Folder
+        </button>
+      </div>
+
+      <!-- Entities Card -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon blue">🏢</div>
+          <div>
+            <div class="card-title">Entities</div>
+            <div class="card-sub">9 entities covered</div>
+          </div>
+        </div>
+        <div class="entity-grid">
+          <div class="entity-pill"><div class="entity-dot" style="background:#60a5fa"></div>Bermuda</div>
+          <div class="entity-pill"><div class="entity-dot" style="background:#f59e0b"></div>UK</div>
+          <div class="entity-pill"><div class="entity-dot" style="background:#34d399"></div>Cayman</div>
+          <div class="entity-pill"><div class="entity-dot" style="background:#f87171"></div>BVI</div>
+          <div class="entity-pill"><div class="entity-dot" style="background:#a78bfa"></div>Gibraltar</div>
+          <div class="entity-pill"><div class="entity-dot" style="background:#fb923c"></div>Jersey</div>
+          <div class="entity-pill"><div class="entity-dot" style="background:#38bdf8"></div>Guernsey</div>
+          <div class="entity-pill"><div class="entity-dot" style="background:#4ade80"></div>Isle of Man</div>
+          <div class="entity-pill"><div class="entity-dot" style="background:#e879f9"></div>Banking Grp</div>
+        </div>
+      </div>
+
+      <!-- Processing Info -->
+      <div class="processing-info">
+        <div class="processing-label">Processing Status</div>
+        <div class="progress-track">
+          <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+        </div>
+        <div class="progress-text">
+          <span id="progressLabel">Idle</span>
+          <span id="progressValue">0%</span>
+        </div>
+      </div>
+
+      <!-- Data Summary -->
+      <div class="data-summary">
+        <div class="summary-row">
+          <span class="summary-label">Console Path:</span>
+          <span class="summary-value" id="summaryPath">—</span>
+        </div>
+        <div class="summary-row">
+          <span class="summary-label">Last File:</span>
+          <span class="summary-value" id="summaryFile">—</span>
+        </div>
+        <div class="summary-row">
+          <span class="summary-label">Check Cycle:</span>
+          <span class="summary-value accent" id="summaryChecks">Every 5s</span>
+        </div>
+        <div class="summary-row">
+          <span class="summary-label">Watcher:</span>
+          <span class="summary-value success" id="summaryWatcher">Active</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // ── Configuration ──────────────────────────────────────────
+  const API = 'http://localhost:8080/api/dashboard';
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const PBI_PATH = 'C:\\Users\\Thevindu.Aditya\\Desktop\\NTG_Dashboard.pbit';
+  const OUTPUT_DIR = 'C:\\Users\\Thevindu.Aditya\\Desktop\\The end result';
+
+  let processedMonths = new Set();
+  let lastRefresh = null;
+  let healthStatus = { online: false, mappingsLoaded: 0 };
+
+  // ── Health Check ───────────────────────────────────────────
+  async function checkHealth() {
+    const dot = document.getElementById('statusDot');
+    const text = document.getElementById('statusText');
+    try {
+      const res = await fetch(API + '/health');
+      if (res.ok) {
+        const d = await res.json();
+        healthStatus = d;
+        dot.className = 'status-dot online';
+        text.textContent = 'Backend · ' + parseInt(d.mappingsLoaded || 0).toLocaleString() + ' mappings';
+        document.getElementById('statTotalMappings').textContent = 
+          parseInt(d.mappingsLoaded || 0).toLocaleString();
+      } else { throw new Error(); }
+    } catch {
+      healthStatus.online = false;
+      dot.className = 'status-dot offline';
+      text.textContent = 'Backend offline';
+    }
+  }
+
+  // ── Load Dashboard Data ────────────────────────────────────
+  async function loadDashboard() {
+    try {
+      const res = await fetch(API + '/status');
+      if (!res.ok) return;
+      const d = await res.json();
+      const ws = d.watcherStatus || {};
+      const months = (ws.processedMonths || '').split(' ').filter(Boolean);
+
+      // Update processed months
+      const newMonths = months.filter(m => !processedMonths.has(m));
+      newMonths.forEach(m => processedMonths.add(m));
+
+      // Update all display elements
+      updateStats(months, ws);
+      renderTable(months, ws);
+      updateSidebar(ws);
+      updateProgress(months.length);
+
+      // Update last refresh time
+      lastRefresh = new Date();
+    } catch (e) {
+      console.error('Dashboard load error:', e);
+    }
+  }
+
+  function updateStats(months, ws) {
+    const count = months.length;
+    const pct = Math.round((count / 12) * 100);
+
+    document.getElementById('statMonthsProcessed').textContent = count;
+    document.getElementById('statCompletion').textContent = pct + '%';
+
+    if (lastRefresh) {
+      const time = lastRefresh.toLocaleTimeString('en-GB', { hour12: false });
+      document.getElementById('statLastUpdate').textContent = time;
+    }
+
+    document.getElementById('metricFiles').textContent = (ws.processedFiles || []).length;
+    document.getElementById('metricChecks').textContent = ws.checkCounter || '—';
+  }
+
+  function updateSidebar(ws) {
+    document.getElementById('summaryPath').textContent = ws.consolePath || '—';
+    document.getElementById('summaryFile').textContent = ws.processedFiles?.[ws.processedFiles.length - 1] || '—';
+    document.getElementById('summaryWatcher').textContent = 
+      ws.checkCounter > 0 ? 'Active' : '—';
+  }
+
+  function updateProgress(processed) {
+    const pct = Math.round((processed / 12) * 100);
+    document.getElementById('progressFill').style.width = pct + '%';
+    document.getElementById('progressLabel').textContent = 
+      processed === 0 ? 'Idle' : 'Processing: ' + processed + ' months';
+    document.getElementById('progressValue').textContent = pct + '%';
+  }
+
+  function renderTable(months, ws) {
+    const tbody = document.getElementById('monthsTable');
+
+    if (!months.length) {
+      tbody.innerHTML = `
+        <tr class="empty-row">
+          <td colspan="4">No months processed yet — upload a console file to begin</td>
+        </tr>`;
+      return;
+    }
+
+    tbody.innerHTML = MONTHS.map(m => {
+      const done = months.includes(m);
+      return `<tr>
+        <td>${m}</td>
+        <td>
+          <span class="badge ${done ? 'done' : 'pending'}">
+            ${done ? '✓ Processed' : '· Pending'}
+          </span>
+        </td>
+        <td>${done ? '9' : '—'}</td>
+        <td>${done ? new Date().toLocaleDateString('en-GB') : '—'}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  // ── Actions ────────────────────────────────────────────────
+  function openPowerBI() {
+    window.location.href = 'ms-powerbi:open?filePath=' + encodeURIComponent(PBI_PATH);
+    fetch(API + '/open-powerbi', { method: 'POST' }).catch(() => {});
+  }
+
+  function openOutputFolder() {
+    fetch(API + '/open-folder', { method: 'POST' }).catch(() => {});
+  }
+
+  function refreshDashboard() {
+    loadDashboard();
+  }
+
+  function exportData() {
+    const link = document.createElement('a');
+    link.href = API + '/export';
+    link.click();
+  }
+
+  // ── Initialize & Sync ──────────────────────────────────────
+  checkHealth();
+  loadDashboard();
+
+  setInterval(checkHealth, 8000);
+  setInterval(loadDashboard, 5000);
+</script>
+</body>
+</html>

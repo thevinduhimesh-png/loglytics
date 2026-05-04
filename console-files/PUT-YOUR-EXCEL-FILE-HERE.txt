@@ -1,0 +1,4 @@
+Drop your NTG console workbook (.xlsx) into this folder.
+The system will auto-detect and parse it within 30 seconds.
+
+Expected sheets: S_PL, S_BS, S_CF, W_Exceptional

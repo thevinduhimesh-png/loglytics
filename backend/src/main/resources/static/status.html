@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>NTG · Status</title>
+  <link rel="stylesheet" href="/css/shared.css"/>
+  <style>
+    .main { padding: 0 40px 48px; }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    .stat-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 22px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-box::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: var(--gold);
+      opacity: 0.5;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      font-family: 'DM Mono', monospace;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+
+    .stat-value {
+      font-family: 'Instrument Serif', serif;
+      font-size: 38px;
+      color: var(--white);
+      line-height: 1;
+    }
+
+    .stat-value.gold  { color: var(--gold); }
+    .stat-value.green { color: var(--green); }
+    .stat-desc { font-size: 12px; color: var(--text-muted); margin-top: 6px; }
+
+    /* Month chips */
+    .months-wrap { padding: 22px; }
+
+    .months-label {
+      font-size: 11px;
+      font-family: 'DM Mono', monospace;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+    }
+
+    .months-chips {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 8px;
+    }
+
+    .chip {
+      padding: 10px 4px;
+      text-align: center;
+      border-radius: 9px;
+      font-size: 12.5px;
+      font-weight: 500;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.02);
+      color: var(--text-muted);
+      transition: all 0.4s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .chip.done {
+      background: rgba(74,222,128,0.08);
+      border-color: rgba(74,222,128,0.25);
+      color: var(--green);
+    }
+
+    .chip.done::after {
+      content: '✓';
+      position: absolute;
+      top: 2px; right: 4px;
+      font-size: 9px;
+      opacity: 0.6;
+    }
+
+    .chip.active {
+      background: rgba(196,160,80,0.12);
+      border-color: rgba(196,160,80,0.4);
+      color: var(--gold);
+      animation: chipPulse 1.5s infinite;
+    }
+
+    @keyframes chipPulse {
+      0%,100% { box-shadow: 0 0 0 0 rgba(196,160,80,0.2); }
+      50%      { box-shadow: 0 0 0 5px rgba(196,160,80,0); }
+    }
+
+    /* Watcher status */
+    .info-row {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      padding: 22px;
+    }
+
+    .info-item {}
+
+    .info-label {
+      font-size: 11px;
+      font-family: 'DM Mono', monospace;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .info-value {
+      font-size: 13px;
+      color: var(--white);
+      font-family: 'DM Mono', monospace;
+      word-break: break-all;
+    }
+
+    .info-value.gold { color: var(--gold); }
+
+    .btn-reset {
+      margin: 0 22px 22px;
+      width: calc(100% - 44px);
+      padding: 10px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-muted);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-reset:hover { color: var(--white); border-color: var(--border-bright); }
+
+    /* Log */
+    .log-wrap { max-height: 340px; overflow-y: auto; }
+
+    .log-entry {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--border);
+      animation: logIn 0.25s ease;
+    }
+
+    .log-entry:last-child { border-bottom: none; }
+
+    @keyframes logIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .log-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%; flex-shrink: 0; margin-top: 5px;
+    }
+
+    .log-dot.info    { background: var(--gold); }
+    .log-dot.success { background: var(--green); }
+    .log-dot.error   { background: var(--red); }
+    .log-dot.system  { background: var(--text-muted); }
+
+    .log-body { flex: 1; }
+    .log-msg  { font-size: 13px; color: var(--white); line-height: 1.4; }
+    .log-time { font-size: 11px; font-family: 'DM Mono', monospace; color: var(--text-muted); margin-top: 2px; }
+
+    .log-empty {
+      padding: 40px 20px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+
+    .auto-refresh {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 11.5px; font-family: 'DM Mono', monospace;
+      color: var(--text-muted); margin-top: 14px;
+    }
+
+    .refresh-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%; background: var(--gold);
+      animation: blink 2s infinite;
+    }
+
+    @keyframes blink {
+      0%,100% { opacity: 1; }
+      50%      { opacity: 0.2; }
+    }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <a href="/" class="nav-logo">
+    <span class="nav-logo-mark">NTG</span>
+    <span class="nav-logo-text">Reporting</span>
+  </a>
+  <div class="nav-links">
+    <a href="/"          class="nav-link">Upload</a>
+    <a href="/status"    class="nav-link active">Status</a>
+    <a href="/dashboard" class="nav-link">Dashboard</a>
+  </div>
+  <div class="nav-right">
+    <div class="status-pill">
+      <span class="status-dot" id="statusDot"></span>
+      <span id="statusText">Connecting…</span>
+    </div>
+  </div>
+</nav>
+
+<div class="main">
+  <div class="page-header">
+    <div class="page-tag">System Status</div>
+    <h1 class="page-title">Processing <em>Overview</em></h1>
+    <p class="page-sub">Live view of all processed months and system activity.</p>
+  </div>
+
+  <div class="grid-3">
+    <div class="stat-box">
+      <div class="stat-label">Months Processed</div>
+      <div class="stat-value green" id="statMonths">0</div>
+      <div class="stat-desc">of 12 months in FY2025</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">Total Mappings</div>
+      <div class="stat-value gold" id="statMappings">—</div>
+      <div class="stat-desc">cells across 9 entities</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">Watcher Checks</div>
+      <div class="stat-value" id="statChecks">—</div>
+      <div class="stat-desc">every 5 seconds</div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <!-- Month chips -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon gold">📅</div>
+        <div>
+          <div class="card-title">FY2025 Month Coverage</div>
+          <div class="card-sub">Months written to NTG_2025_Dashboard.xlsx</div>
+        </div>
+      </div>
+      <div class="months-wrap">
+        <div class="months-label">Jan — Dec</div>
+        <div class="months-chips" id="monthChips"></div>
+      </div>
+    </div>
+
+    <!-- Watcher info -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon blue">⚙️</div>
+        <div>
+          <div class="card-title">Watcher Status</div>
+          <div class="card-sub">File monitoring state</div>
+        </div>
+      </div>
+      <div class="info-row">
+        <div class="info-item">
+          <div class="info-label">Processed Months</div>
+          <div class="info-value gold" id="infoMonths">—</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">Console Folder</div>
+          <div class="info-value" id="infoPath">—</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">Last Processed File</div>
+          <div class="info-value" id="infoFile">—</div>
+        </div>
+      </div>
+      <button class="btn-reset" onclick="resetWatcher()">↺ Reset Watcher State</button>
+    </div>
+  </div>
+
+  <!-- Activity log -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-icon green">📋</div>
+      <div>
+        <div class="card-title">Activity Log</div>
+        <div class="card-sub">Real-time system events</div>
+      </div>
+    </div>
+    <div class="log-wrap" id="logWrap">
+      <div class="log-empty">No activity yet — upload a console file to begin</div>
+    </div>
+  </div>
+
+  <div class="auto-refresh">
+    <div class="refresh-dot"></div>
+    Auto-refreshing every 5 seconds
+  </div>
+</div>
+
+<script>
+  const API    = 'http://localhost:8080/api/dashboard';
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const logs   = [];
+  let knownMonths = new Set();
+
+  // ── Health check ──────────────────────────────────────────
+  async function checkHealth() {
+    const dot  = document.getElementById('statusDot');
+    const text = document.getElementById('statusText');
+    try {
+      const res = await fetch(API + '/health');
+      if (res.ok) {
+        const d = await res.json();
+        dot.className    = 'status-dot online';
+        text.textContent = 'Backend · ' + parseInt(d.mappingsLoaded || 0).toLocaleString() + ' mappings';
+        document.getElementById('statMappings').textContent = parseInt(d.mappingsLoaded || 0).toLocaleString();
+      } else { throw new Error(); }
+    } catch {
+      dot.className    = 'status-dot offline';
+      text.textContent = 'Backend offline';
+    }
+  }
+
+  // ── Build chips ───────────────────────────────────────────
+  function buildChips() {
+    const wrap = document.getElementById('monthChips');
+    wrap.innerHTML = '';
+    MONTHS.forEach(m => {
+      const c = document.createElement('div');
+      c.className = 'chip' + (knownMonths.has(m) ? ' done' : '');
+      c.id        = 'chip-' + m;
+      c.textContent = m;
+      wrap.appendChild(c);
+    });
+  }
+
+  buildChips();
+
+  function markChip(m, state) {
+    const c = document.getElementById('chip-' + m);
+    if (c) { c.className = 'chip ' + state; }
+    if (state === 'done') knownMonths.add(m);
+  }
+
+  // ── Log ───────────────────────────────────────────────────
+  function addLog(type, msg) {
+    const now = new Date().toLocaleTimeString('en-GB', { hour12: false });
+    logs.unshift({ type, msg, time: now });
+    if (logs.length > 60) logs.pop();
+    renderLog();
+  }
+
+  function renderLog() {
+    const wrap = document.getElementById('logWrap');
+    if (!logs.length) {
+      wrap.innerHTML = '<div class="log-empty">No activity yet</div>';
+      return;
+    }
+    wrap.innerHTML = logs.map(l => `
+      <div class="log-entry">
+        <div class="log-dot ${l.type}"></div>
+        <div class="log-body">
+          <div class="log-msg">${l.msg}</div>
+          <div class="log-time">${l.time}</div>
+        </div>
+      </div>`).join('');
+  }
+
+  // ── Refresh ───────────────────────────────────────────────
+  async function refresh() {
+    try {
+      const res = await fetch(API + '/status');
+      if (!res.ok) return;
+      const d  = await res.json();
+      const ws = d.watcherStatus || {};
+
+      document.getElementById('statChecks').textContent = ws.checkCounter || '0';
+      document.getElementById('infoPath').textContent   = ws.consolePath  || '—';
+
+      const files  = ws.processedFiles || [];
+      const lastF  = Array.isArray(files) ? files[files.length - 1] : '—';
+      document.getElementById('infoFile').textContent   = lastF || '—';
+
+      const months = (ws.processedMonths || '').split(' ').filter(Boolean);
+      document.getElementById('statMonths').textContent  = months.length;
+      document.getElementById('infoMonths').textContent  = months.join(', ') || '—';
+
+      months.forEach(m => {
+        if (!knownMonths.has(m)) {
+          knownMonths.add(m);
+          markChip(m, 'done');
+          addLog('success', 'Month ' + m + ' processed and written to NTG_2025_Dashboard.xlsx');
+        }
+      });
+
+    } catch { addLog('error', 'Could not reach backend — is Spring Boot running?'); }
+  }
+
+  async function resetWatcher() {
+    try {
+      await fetch(API + '/watcher/reset', { method: 'POST' });
+      knownMonths.clear();
+      buildChips();
+      document.getElementById('statMonths').textContent = '0';
+      document.getElementById('infoMonths').textContent = '—';
+      document.getElementById('infoFile').textContent   = '—';
+      addLog('system', 'Watcher state reset — all files will be reprocessed on next cycle');
+    } catch { addLog('error', 'Reset failed — backend unreachable'); }
+  }
+
+  addLog('system', 'Status page loaded');
+  checkHealth();
+  refresh();
+  setInterval(checkHealth, 8000);
+  setInterval(refresh,      5000);
+</script>
+</body>
+</html>
