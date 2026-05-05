@@ -1,4 +1,4 @@
-# NTG Live Reporting System
+# Live Financial reporting system
 
 ## How to Start
 
